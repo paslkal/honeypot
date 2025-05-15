@@ -1,6 +1,6 @@
 # Honeypot for Redis
 
-Чтобы запустить лавушку, сначала нужно создать `.env` файл
+Чтобы запустить ловушку, сначала нужно создать `.env` файл
 ```.env
 REDIS_PASSWORD=passwd
 REDIS_USER=my_user
