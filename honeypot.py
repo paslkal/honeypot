@@ -89,7 +89,7 @@ class Honeypot:
                 )
 
                 # Send fake response
-                response = execute_redis_command(data) + f"\n{dest_ip}:{dest_port}>\n"
+                response = execute_redis_command(data) + f"\n{dest_ip}:{dest_port}> "
                 client_socket.send(response.encode())
         except Exception as e:
             print(f"Error handling connection: {e}")
