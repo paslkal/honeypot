@@ -3,3 +3,4 @@ venv
 redisdata
 __pycache__
 honeypot_logs/*
+.vscode/*
