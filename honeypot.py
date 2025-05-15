@@ -67,7 +67,8 @@ class Honeypot:
                 `-._    `-._`-.__.-'_.-'    _.-'                                   
                     `-._    `-.__.-'    _.-'                                       
                         `-._        _.-'                                           
-                            `-.__.-'                                                 
+                            `-.__.-'      
+                {dest_ip}:{dest_port}>\n                      
             """
 
             # Send appropriate banner for the service
@@ -75,7 +76,6 @@ class Honeypot:
 
             # Receive data from attacker
             while True:
-                client_socket.send(f"{src_ip}:{src_port}>\n".encode())
                 data = client_socket.recv(1024)
                 if not data:
                     break
@@ -89,7 +89,8 @@ class Honeypot:
                 )
 
                 # Send fake response
-                client_socket.send(execute_redis_command(data).encode())
+                response = execute_redis_command(data) + f"\n{dest_ip}:{dest_port}>\n"
+                client_socket.send(response.encode())
         except Exception as e:
             print(f"Error handling connection: {e}")
         finally:

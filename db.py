@@ -15,7 +15,7 @@ def execute_redis_command(command: str) -> str:
     try:
         parts = command.split()
         if not parts:
-            return "Ошибка: пустая команда"
+            return ""
 
         cmd = parts[0].upper()
         args = parts[1:]
