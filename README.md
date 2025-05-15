@@ -10,7 +10,8 @@ REDIS_USER_PASSWORD=passwd
 Затем запустить в терминале эти команды
 ```sh
 docker-compose up
+pip install -r requirements.txt
 python3 main.py
 ```
-Чтобы протестировать ловушку, введите в консоли `py honeypot_simulator.py`. <br/> 
+Чтобы протестировать ловушку, введите в консоли `python3 honeypot_simulator.py`. <br/> 
 Можно ввести любую команду, например `GET somekey`, `SET somekey somevalue` и т.д.
