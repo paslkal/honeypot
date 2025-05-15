@@ -1,7 +1,6 @@
 import redis
 from env import REDIS_USER_PASSWORD, REDIS_USER
 
-# TODO: загружать усера и пароль через .env файл
 r = redis.Redis(
     host="localhost",
     port=6380,
