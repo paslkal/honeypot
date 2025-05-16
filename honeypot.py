@@ -1,11 +1,9 @@
 import socket
 from pathlib import Path
 import datetime
-import json
 from db import execute_redis_command
 import threading
 import logging
-from pythonjsonlogger.json import JsonFormatter
 
 # Configure logging directory
 LOG_DIR = Path("honeypot_logs")
@@ -25,11 +23,7 @@ class Honeypot:
             LOG_DIR / f"honeypot_{datetime.datetime.now().strftime('%Y%m%d')}.json"
         )
         file_handler = logging.FileHandler(log_file)
-        stream_handler = logging.StreamHandler()
-        formatter = JsonFormatter()
-        stream_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
-        self.logger.addHandler(stream_handler)
 
     def log_activity(
         self,
@@ -130,7 +124,7 @@ class Honeypot:
                 )
                 client_socket.send(response.encode())
         except Exception as e:
-            print(f"Error handling connection: {e}")
+            self.logger.warning({"message":f"Error handling connection: {e}"})
         finally:
             client_socket.close()
 
@@ -156,4 +150,4 @@ class Honeypot:
                 client_handler.start()
 
         except Exception as e:
-            print(f"Error starting listener on port {port}: {e}")
+            self.logger.warning({"message":f"Error starting listener on port {port}: {e}"})
