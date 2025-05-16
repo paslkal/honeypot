@@ -13,7 +13,7 @@ LOG_DIR.mkdir(exist_ok=True)
 class Honeypot:
     def __init__(self, bind_ip="0.0.0.0", ports=None):
         self.bind_ip = bind_ip
-        self.ports = ports or [6381, 6378, 6377]  # Default ports to monitor
+        self.ports = ports or [6379, 6380]  # Default ports to monitor
 
         # Creating a logger and setting handlers
         self.logger = logging.getLogger(__name__)

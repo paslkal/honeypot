@@ -3,7 +3,7 @@ from env import REDIS_USER_PASSWORD, REDIS_USER
 
 r = redis.Redis(
     host="localhost",
-    port=6380,
+    port=6360,
     username=REDIS_USER,
     password=REDIS_USER_PASSWORD,
     decode_responses=True,

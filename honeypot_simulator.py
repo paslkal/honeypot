@@ -3,7 +3,7 @@ import time
 
 
 def main():
-    ports = [6378, 6381, 6377]
+    ports = [6380, 6379]
     for port in ports:
         try:
             # Создаем и настраиваем сокет
