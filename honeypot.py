@@ -4,6 +4,7 @@ import datetime
 from db import execute_redis_command
 import threading
 import logging
+from utils import plain_or_base64
 
 # Configure logging directory
 LOG_DIR = Path("honeypot_logs")
@@ -108,7 +109,6 @@ class Honeypot:
 
                 # Send fake response
                 response = execute_redis_command(data) + f"\n{local_ip}:{local_port}> "
-                # TODO: сделать функцию, которая будет различать кодировку: plain or base64
                 self.log_activity(
                     dest_ip=local_ip,
                     src_ip=remote_ip,
@@ -117,8 +117,8 @@ class Honeypot:
                     event_id="command_accept",
                     command_input=data.decode(),
                     command_output=response,
-                    command_input_codec="plain",
-                    command_output_codec="plain",
+                    command_input_codec=plain_or_base64(data.decode()),
+                    command_output_codec=plain_or_base64(response),
                 )
                 client_socket.send(response.encode())
         except ConnectionResetError as e:
