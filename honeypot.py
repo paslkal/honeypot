@@ -19,7 +19,7 @@ class Honeypot:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
         log_file = (
-            LOG_DIR / f"honeypot_{datetime.datetime.now().strftime('%Y%m%d')}.json"
+            LOG_DIR / f"honeypot_{datetime.datetime.now().strftime('%Y%m%d')}.ndjson"
         )
         file_handler = logging.FileHandler(log_file)
         self.logger.addHandler(file_handler)
@@ -108,7 +108,7 @@ class Honeypot:
 
                 # Send fake response
                 response = execute_redis_command(data) + f"\n{local_ip}:{local_port}> "
-                #TODO: сделать функцию, которая будет различать кодировку: plain or base64
+                # TODO: сделать функцию, которая будет различать кодировку: plain or base64
                 self.log_activity(
                     dest_ip=local_ip,
                     src_ip=remote_ip,
@@ -122,7 +122,14 @@ class Honeypot:
                 )
                 client_socket.send(response.encode())
         except ConnectionResetError as e:
-            #TODO: сделать лог для disconnection
+            self.log_activity(
+                dest_ip=local_ip,
+                src_ip=remote_ip,
+                dest_port=local_port,
+                src_port=remote_port,
+                event_id="disconnection",
+            )
+
             print(f"Error handling connection: {e}")
         except Exception as e:
             print(f"Unexpected Error: {e}")
@@ -145,7 +152,7 @@ class Honeypot:
                 # Handle connection in separate thread
                 client_handler = threading.Thread(
                     target=self.handle_connection,
-                    args=(client, ),
+                    args=(client,),
                 )
                 client_handler.start()
 
