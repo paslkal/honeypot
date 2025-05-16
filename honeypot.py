@@ -4,6 +4,8 @@ import datetime
 import json
 from db import execute_redis_command
 import threading
+import logging
+from pythonjsonlogger.json import JsonFormatter
 
 # Configure logging directory
 LOG_DIR = Path("honeypot_logs")
@@ -13,17 +15,38 @@ LOG_DIR.mkdir(exist_ok=True)
 class Honeypot:
     def __init__(self, bind_ip="0.0.0.0", ports=None):
         self.bind_ip = bind_ip
-        self.ports = ports or [6381, 6378]  # Default ports to monitor
+        self.ports = ports or [6381, 6378, 6377]  # Default ports to monitor
         self.active_connections = {}
-        self.log_file = (
+
+        # Creating a logger and setting handlers
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        log_file = (
             LOG_DIR / f"honeypot_{datetime.datetime.now().strftime('%Y%m%d')}.json"
         )
+        file_handler = logging.FileHandler(log_file)
+        stream_handler = logging.StreamHandler()
+        formatter = JsonFormatter()
+        stream_handler.setFormatter(formatter)
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(stream_handler)
 
     def log_activity(
-        self, *, dest_ip: str, src_ip: str, dest_port: str, src_port: str, event_id: str
+        self,
+        command_input: str | None = None,
+        command_output: str | None = None,
+        command_input_codec: str | None = None,
+        command_output_codec: str | None = None,
+        *,
+        dest_ip: str,
+        src_ip: str,
+        dest_port: str,
+        src_port: str,
+        event_id: str,
     ):
         """Log suspicious activity with timestamp and details"""
         activity = {
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "dest_ip": dest_ip,
             "scr_ip": src_ip,
             "dest_port": dest_port,
@@ -31,16 +54,28 @@ class Honeypot:
             "protocol": "tcp",
             "event_id": event_id,
             "type": "cowrie",
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }
 
-        with open(self.log_file, "a") as f:
-            json.dump(activity, f)
-            f.write("\n")
+        if event_id == "command_accept":
+            activity["command_accept"] = {
+                "command_input": command_input,
+                "command_output": command_output,
+                "command_input_codec": command_input_codec,
+                "command_output_codec": command_output_codec,
+            }
 
-    def handle_connection(self, client_socket, dest_ip, dest_port, src_ip, src_port):
+        self.logger.info(activity)
+
+    def handle_connection(
+        self,
+        client_socket: socket.socket,
+        dest_ip: str,
+        dest_port: int,
+        src_ip: str,
+        src_port: int,
+    ):
         """Handle individual connections and emulate services"""
-        
+
         self.log_activity(
             dest_ip=dest_ip,
             src_ip=src_ip,
@@ -48,7 +83,7 @@ class Honeypot:
             src_port=src_port,
             event_id="authorization",
         )
-        
+
         try:
             banner = f""""
                                 _._                                                  
@@ -80,23 +115,26 @@ class Honeypot:
                 if not data:
                     break
 
+                # Send fake response
+                response = execute_redis_command(data) + f"\n{dest_ip}:{dest_port}> "
                 self.log_activity(
                     dest_ip=dest_ip,
                     src_ip=src_ip,
                     dest_port=dest_port,
                     src_port=src_port,
                     event_id="command_accept",
+                    command_input=data.decode(),
+                    command_output=response,
+                    command_input_codec="utf-8",
+                    command_output_codec="utf-8",
                 )
-
-                # Send fake response
-                response = execute_redis_command(data) + f"\n{dest_ip}:{dest_port}> "
                 client_socket.send(response.encode())
         except Exception as e:
             print(f"Error handling connection: {e}")
         finally:
             client_socket.close()
 
-    def start_listener(self, port:str):
+    def start_listener(self, port: int):
         """Start a listener on specified port"""
         try:
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -110,8 +148,10 @@ class Honeypot:
                 print(f"[*] Accepted connection from {addr[0]}:{addr[1]}")
 
                 # Handle connection in separate thread
+                # TODO: get real IP address of REDIS
                 client_handler = threading.Thread(
-                    target=self.handle_connection, args=(client, "198.162.10.1", port, addr[0], addr[1])
+                    target=self.handle_connection,
+                    args=(client, "198.162.10.1", port, addr[0], addr[1]),
                 )
                 client_handler.start()
 

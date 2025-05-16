@@ -1,20 +1,21 @@
 import socket
 import time
 
+
 def main():
-    ports = [6378, 6381]
+    ports = [6378, 6381, 6377]
     for port in ports:
         try:
             # Создаем и настраиваем сокет
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(2)
-            
+
             # Подключаемся к серверу
             sock.connect(("0.0.0.0", port))
-            # Получаем баннер   
+            # Получаем баннер
             banner = sock.recv(1024)
             print(banner.decode())
-            
+
             while True:
                 command = input()
                 if not command:
@@ -25,7 +26,7 @@ def main():
                 # Получаем ответ
                 response = sock.recv(1024)
                 print(response.decode())
-            
+
         except socket.timeout:
             print("Error: Connection timed out")
         except ConnectionRefusedError:
@@ -34,6 +35,7 @@ def main():
             print(f"Unexpected error: {e}")
         finally:
             sock.close()  # Всегда закрываем соединение
+
 
 if __name__ == "__main__":
     main()

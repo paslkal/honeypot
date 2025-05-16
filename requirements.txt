@@ -1,3 +1,4 @@
 redis
 datetime
 dotenv
+python-json-logger
