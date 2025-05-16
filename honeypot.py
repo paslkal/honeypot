@@ -14,7 +14,6 @@ class Honeypot:
     def __init__(self, bind_ip="0.0.0.0", ports=None):
         self.bind_ip = bind_ip
         self.ports = ports or [6381, 6378, 6377]  # Default ports to monitor
-        self.active_connections = {}
 
         # Creating a logger and setting handlers
         self.logger = logging.getLogger(__name__)
@@ -63,18 +62,16 @@ class Honeypot:
     def handle_connection(
         self,
         client_socket: socket.socket,
-        dest_ip: str,
-        dest_port: int,
-        src_ip: str,
-        src_port: int,
     ):
         """Handle individual connections and emulate services"""
+        local_ip, local_port = client_socket.getsockname()
+        remote_ip, remote_port = client_socket.getpeername()
 
         self.log_activity(
-            dest_ip=dest_ip,
-            src_ip=src_ip,
-            dest_port=dest_port,
-            src_port=src_port,
+            dest_ip=local_ip,
+            src_ip=remote_ip,
+            dest_port=local_port,
+            src_port=remote_port,
             event_id="authorization",
         )
 
@@ -97,7 +94,7 @@ class Honeypot:
                     `-._    `-.__.-'    _.-'                                       
                         `-._        _.-'                                           
                             `-.__.-'      
-                {dest_ip}:{dest_port}>\n                      
+                {local_ip}:{local_port}>\n                      
             """
 
             # Send appropriate banner for the service
@@ -110,21 +107,25 @@ class Honeypot:
                     break
 
                 # Send fake response
-                response = execute_redis_command(data) + f"\n{dest_ip}:{dest_port}> "
+                response = execute_redis_command(data) + f"\n{local_ip}:{local_port}> "
+                #TODO: сделать функцию, которая будет различать кодировку: plain or base64
                 self.log_activity(
-                    dest_ip=dest_ip,
-                    src_ip=src_ip,
-                    dest_port=dest_port,
-                    src_port=src_port,
+                    dest_ip=local_ip,
+                    src_ip=remote_ip,
+                    dest_port=local_port,
+                    src_port=remote_ip,
                     event_id="command_accept",
                     command_input=data.decode(),
                     command_output=response,
-                    command_input_codec="utf-8",
-                    command_output_codec="utf-8",
+                    command_input_codec="plain",
+                    command_output_codec="plain",
                 )
                 client_socket.send(response.encode())
+        except ConnectionResetError as e:
+            #TODO: сделать лог для disconnection
+            print(f"Error handling connection: {e}")
         except Exception as e:
-            self.logger.warning({"message":f"Error handling connection: {e}"})
+            print(f"Unexpected Error: {e}")
         finally:
             client_socket.close()
 
@@ -142,12 +143,11 @@ class Honeypot:
                 print(f"[*] Accepted connection from {addr[0]}:{addr[1]}")
 
                 # Handle connection in separate thread
-                # TODO: get real IP address of REDIS
                 client_handler = threading.Thread(
                     target=self.handle_connection,
-                    args=(client, "198.162.10.1", port, addr[0], addr[1]),
+                    args=(client, ),
                 )
                 client_handler.start()
 
         except Exception as e:
-            self.logger.warning({"message":f"Error starting listener on port {port}: {e}"})
+            print(f"Error starting listener on port {port}: {e}")
