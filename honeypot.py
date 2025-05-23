@@ -36,16 +36,43 @@ class Honeypot:
 
                 query = data.decode()
 
-                #TODO: handle disconnection(QUIT), authorization(AUTH)
+                parts = query.split()
+                command = parts[0].upper()
+                if command == "QUIT":
+                    response = execute_redis_command(query)
+                    client_socket.send(response.encode())
+                    break
+
+                if command == "AUTH":
+                    username = "default"
+                    password = ""
+                    response = execute_redis_command(query)
+                    if response == "OK":
+                        auth_status = True
+                    else:
+                        auth_status = False
+                    if len(parts) == 2:
+                        password = parts[1]
+                        response = execute_redis_command(query)
+                    elif len(parts) == 3:
+                        username, password = parts[1:]
+
+                    logger.log_activity(
+                        username=username,
+                        password=password,
+                        auth_status=auth_status,
+                        event_id="authorization",
+                    )
+                else:
+                    response = execute_redis_command(query)
+                    logger.log_activity(
+                        event_id="command_accept",
+                        command_input=query,
+                        command_output=response,
+                        command_input_codec=plain_or_base64(query),
+                        command_output_codec=plain_or_base64(response),
+                    )
                 # Send fake response
-                response = execute_redis_command(query)
-                logger.log_activity(
-                    event_id="command_accept",
-                    command_input=query,
-                    command_output=response,
-                    command_input_codec=plain_or_base64(query),
-                    command_output_codec=plain_or_base64(response),
-                )
                 client_socket.send(response.encode())
         except ConnectionResetError as e:
             logger.log_activity(event_id="disconnection")

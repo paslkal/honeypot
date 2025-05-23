@@ -2,7 +2,7 @@ import socket
 import time
 
 
-def main():
+def main(ip: str = "0.0.0.0"):
     ports = [6380, 6379]
     for port in ports:
         try:
@@ -11,7 +11,7 @@ def main():
             sock.settimeout(2)
 
             # Подключаемся к серверу
-            sock.connect(("172.18.0.2", port))
+            sock.connect((ip, port))
 
             while True:
                 command = input()

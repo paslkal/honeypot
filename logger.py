@@ -27,6 +27,9 @@ class Logger:
 
     def log_activity(
         self,
+        username: str | None = None,
+        password: str | None = None,
+        auth_status: bool | None = None,
         command_input: str | None = None,
         command_output: str | None = None,
         command_input_codec: str | None = None,
@@ -52,6 +55,13 @@ class Logger:
                 "command_output": command_output,
                 "command_input_codec": command_input_codec,
                 "command_output_codec": command_output_codec,
+            }
+
+        if event_id == "authorization":
+            activity["authorization"] = {
+                "username": username,
+                "password": password,
+                "auth_status": auth_status,
             }
 
         self.logger.info(activity)
