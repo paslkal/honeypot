@@ -11,7 +11,7 @@ def main():
             sock.settimeout(2)
 
             # Подключаемся к серверу
-            sock.connect(("127.0.0.10", port))
+            sock.connect(("172.18.0.2", port))
             # Получаем баннер
             banner = sock.recv(1024)
             print(banner.decode())

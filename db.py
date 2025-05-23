@@ -3,13 +3,10 @@ from env import REDIS_USER_PASSWORD, REDIS_USER
 
 r = redis.Redis(
     host="localhost",
-    port=6360,
-    username=REDIS_USER,
-    password=REDIS_USER_PASSWORD,
+    port=6379,
     decode_responses=True,
     db=0,
 )
-
 
 def execute_redis_command(command: str) -> str:
     try:
@@ -23,7 +20,7 @@ def execute_redis_command(command: str) -> str:
         if cmd == "GET":
             if len(args) != 1:
                 return "(error) ERR wrong number of arguments for 'get' command"
-            return r.get(args[0])
+            return str(r.get(args[0]))
         elif cmd == "SET":
             if len(args) < 2:
                 return "(error) ERR wrong number of arguments for 'set' command"
@@ -35,3 +32,13 @@ def execute_redis_command(command: str) -> str:
         return f"Ошибка Redis: {e}"
     except Exception as e:
         return f"Общая ошибка: {e}"
+
+
+if __name__ == '__main__':
+    try:
+        print(r.ping())
+        print(execute_redis_command('get k'))
+    except redis.RedisError as e:
+        print(f'Redis Error: {e}')
+    except Exception as e:
+        print(f'General error: {e}')
