@@ -12,9 +12,6 @@ def main():
 
             # Подключаемся к серверу
             sock.connect(("172.18.0.2", port))
-            # Получаем баннер
-            banner = sock.recv(1024)
-            print(banner.decode())
 
             while True:
                 command = input()

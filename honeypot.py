@@ -1,64 +1,14 @@
 import socket
-from pathlib import Path
-import datetime
 from db import execute_redis_command
 import threading
-import logging
 from utils import plain_or_base64
-
-# Configure logging directory
-LOG_DIR = Path("honeypot_logs")
-LOG_DIR.mkdir(exist_ok=True)
+from logger import Logger
 
 
 class Honeypot:
-    def __init__(self, bind_ip="0.0.0.0", ports=None):
-        self.bind_ip = bind_ip
-        self.ports = ports or [6379, 6380]  # Default ports to monitor
-
-        # Creating a logger and setting handlers
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
-        log_file = (
-            LOG_DIR / f"honeypot_{datetime.datetime.now().strftime('%Y%m%d')}.ndjson"
-        )
-        file_handler = logging.FileHandler(log_file)
-        self.logger.addHandler(file_handler)
-
-    def log_activity(
-        self,
-        command_input: str | None = None,
-        command_output: str | None = None,
-        command_input_codec: str | None = None,
-        command_output_codec: str | None = None,
-        *,
-        dest_ip: str,
-        src_ip: str,
-        dest_port: str,
-        src_port: str,
-        event_id: str,
-    ):
-        """Log suspicious activity with timestamp and details"""
-        activity = {
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "dest_ip": dest_ip,
-            "scr_ip": src_ip,
-            "dest_port": dest_port,
-            "src_port": src_port,
-            "protocol": "tcp",
-            "event_id": event_id,
-            "type": "cowrie",
-        }
-
-        if event_id == "command_accept":
-            activity["command_accept"] = {
-                "command_input": command_input,
-                "command_output": command_output,
-                "command_input_codec": command_input_codec,
-                "command_output_codec": command_output_codec,
-            }
-
-        self.logger.info(activity)
+    def __init__(self):
+        self.bind_ip = "0.0.0.0"
+        self.ports = [6379, 6380]  # Default ports to monitor
 
     def handle_connection(
         self,
@@ -68,67 +18,36 @@ class Honeypot:
         local_ip, local_port = client_socket.getsockname()
         remote_ip, remote_port = client_socket.getpeername()
 
-        self.log_activity(
-            dest_ip=local_ip,
-            src_ip=remote_ip,
-            dest_port=local_port,
-            src_port=remote_port,
-            event_id="authorization",
+        logger = Logger(
+            local_ip=local_ip,
+            local_port=local_port,
+            remote_ip=remote_ip,
+            remote_port=remote_port,
         )
 
+        logger.log_activity(event_id="connection")
+
         try:
-            banner = f""""
-                                _._                                                  
-                        _.-``__ ''-._                                             
-                    _.-``    `.  `_.  ''-._           Redis Open Source            
-                .-`` .-```.  ```\/    _.,_ ''-._                                  
-                (    '      ,       .-`  | `,    )     Running in standalone mode
-                |`-._`-...-` __...-.``-._|'` _.-'|     Port: 6379
-                |    `-._   `._    /     _.-'    |     PID: 17
-                `-._    `-._  `-./  _.-'    _.-'                                   
-                |`-._`-._    `-.__.-'    _.-'_.-'|                                  
-                |    `-._`-._        _.-'_.-'    |           https://redis.io       
-                `-._    `-._`-.__.-'_.-'    _.-'                                   
-                |`-._`-._    `-.__.-'    _.-'_.-'|                                  
-                |    `-._`-._        _.-'_.-'    |                                  
-                `-._    `-._`-.__.-'_.-'    _.-'                                   
-                    `-._    `-.__.-'    _.-'                                       
-                        `-._        _.-'                                           
-                            `-.__.-'      
-                {local_ip}:{local_port}>\n                      
-            """
-
-            # Send appropriate banner for the service
-            client_socket.send(banner.encode())
-
             # Receive data from attacker
             while True:
                 data = client_socket.recv(1024)
                 if not data:
                     break
 
+                query = data.decode()
+
                 # Send fake response
-                response = execute_redis_command(data) + f"\n{local_ip}:{local_port}> "
-                self.log_activity(
-                    dest_ip=local_ip,
-                    src_ip=remote_ip,
-                    dest_port=local_port,
-                    src_port=remote_ip,
+                response = execute_redis_command(query)
+                logger.log_activity(
                     event_id="command_accept",
-                    command_input=data.decode(),
+                    command_input=query,
                     command_output=response,
-                    command_input_codec=plain_or_base64(data.decode()),
+                    command_input_codec=plain_or_base64(query),
                     command_output_codec=plain_or_base64(response),
                 )
                 client_socket.send(response.encode())
         except ConnectionResetError as e:
-            self.log_activity(
-                dest_ip=local_ip,
-                src_ip=remote_ip,
-                dest_port=local_port,
-                src_port=remote_port,
-                event_id="disconnection",
-            )
+            logger.log_activity(event_id="disconnection")
 
             print(f"Error handling connection: {e}")
         except Exception as e:
