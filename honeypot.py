@@ -36,6 +36,7 @@ class Honeypot:
 
                 query = data.decode()
 
+                #TODO: handle disconnection(QUIT), authorization(AUTH)
                 # Send fake response
                 response = execute_redis_command(query)
                 logger.log_activity(
