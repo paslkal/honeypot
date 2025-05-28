@@ -12,6 +12,7 @@ services:
     volumes:
       - ./honeypot_logs:/app/honeypot_logs
       - ./redis/data:/app/redis/data
+      - ./src:/app/src
     deploy:
       resources:
         limits:
