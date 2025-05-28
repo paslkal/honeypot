@@ -39,22 +39,21 @@ class Honeypot:
                 parts = query.split()
                 command = parts[0].upper()
                 if command == "QUIT":
-                    response = execute_redis_command(query)
-                    client_socket.send(response.encode())
+                    response = self.format_response(execute_redis_command(query))
                     logger.log_disconnection()
                     break
 
                 if command == "AUTH":
                     username = "default"
                     password = ""
-                    response = execute_redis_command(query)
+                    response = self.format_response(execute_redis_command(query))
                     if response == "OK":
                         auth_status = True
                     else:
                         auth_status = False
                     if len(parts) == 2:
                         password = parts[1]
-                        response = execute_redis_command(query)
+                        response = self.format_response(execute_redis_command(query))
                     elif len(parts) == 3:
                         username, password = parts[1:]
 
@@ -64,7 +63,7 @@ class Honeypot:
                         auth_status=auth_status,
                     )
                 else:
-                    response = execute_redis_command(query)
+                    response = self.format_response(execute_redis_command(query))
                     logger.log_command(
                         command_input=query,
                         command_output=response,
@@ -81,6 +80,15 @@ class Honeypot:
             print(f"Unexpected Error: {e}")
         finally:
             client_socket.close()
+
+    def format_response(self, response:str) -> str:
+        if response == 'None':
+            return '(nil)'
+        
+        if response == 'True':
+            return 'OK'
+        
+        return response
 
     def start_listener(self, port: int):
         """Start a listener on specified port"""
