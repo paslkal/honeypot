@@ -10,7 +10,8 @@ services:
     ports:
       - "6380:6380"
     volumes:
-      - ./db.py:/app/db.py
+      - ./honeypot_logs:/app/honeypot_logs
+      - ./redis/data:/app/redis/data
     deploy:
       resources:
         limits:

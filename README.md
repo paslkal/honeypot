@@ -11,5 +11,5 @@ REDIS_USER_PASSWORD=passwd
 ```sh
 docker-compose up --build
 ```
-Чтобы протестировать ловушку, введите в консоли `python3 honeypot_simulator.py`. <br/> 
+Чтобы протестировать ловушку, введите в консоли `python3 ./src/tests/honeypot_simulator.py`. <br/> 
 Можно ввести любую команду, например `GET somekey`, `SET somekey somevalue` и т.д.
