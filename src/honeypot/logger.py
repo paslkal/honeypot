@@ -82,5 +82,3 @@ class Logger:
         activity = self.create_activity("disconnection")
 
         self.logger.info(activity)
-
-

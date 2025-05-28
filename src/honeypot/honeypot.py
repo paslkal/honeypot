@@ -81,13 +81,13 @@ class Honeypot:
         finally:
             client_socket.close()
 
-    def format_response(self, response:str) -> str:
-        if response == 'None':
-            return '(nil)'
-        
-        if response == 'True':
-            return 'OK'
-        
+    def format_response(self, response: str) -> str:
+        if response == "None":
+            return "(nil)"
+
+        if response == "True":
+            return "OK"
+
         return response
 
     def start_listener(self, port: int):
