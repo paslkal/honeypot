@@ -25,19 +25,7 @@ class Logger:
         self.local_port = local_port
         self.remote_port = remote_port
 
-    def log_activity(
-        self,
-        username: str | None = None,
-        password: str | None = None,
-        auth_status: bool | None = None,
-        command_input: str | None = None,
-        command_output: str | None = None,
-        command_input_codec: str | None = None,
-        command_output_codec: str | None = None,
-        *,
-        event_id: str,
-    ):
-        """Log suspicious activity with timestamp and details"""
+    def create_activity(self, event_id: str) -> dict[str, str | int]:
         activity = {
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "dest_ip": self.local_ip,
@@ -49,19 +37,50 @@ class Logger:
             "type": "cowrie",
         }
 
-        if event_id == "command_accept":
-            activity["command_accept"] = {
-                "command_input": command_input,
-                "command_output": command_output,
-                "command_input_codec": command_input_codec,
-                "command_output_codec": command_output_codec,
-            }
+        return activity
 
-        if event_id == "authorization":
-            activity["authorization"] = {
-                "username": username,
-                "password": password,
-                "auth_status": auth_status,
-            }
+    def log_connection(self):
+        activity = self.create_activity("connection")
 
         self.logger.info(activity)
+
+    def log_command(
+        self,
+        command_input: str,
+        command_output: str,
+        command_input_codec: str,
+        command_output_codec: str,
+    ):
+        activity = self.create_activity("command_accept")
+
+        activity["command_accept"] = {
+            "command_input": command_input,
+            "command_output": command_output,
+            "command_input_codec": command_input_codec,
+            "command_output_codec": command_output_codec,
+        }
+
+        self.logger.info(activity)
+
+    def log_auth(
+        self,
+        username: str,
+        password: str,
+        auth_status: bool,
+    ):
+        activity = self.create_activity("authorization")
+
+        activity["authorization"] = {
+            "username": username,
+            "password": password,
+            "auth_status": auth_status,
+        }
+
+        self.logger.info(activity)
+
+    def log_disconnection(self):
+        activity = self.create_activity("disconnection")
+
+        self.logger.info(activity)
+
+

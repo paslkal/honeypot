@@ -25,7 +25,7 @@ class Honeypot:
             remote_port=remote_port,
         )
 
-        logger.log_activity(event_id="connection")
+        logger.log_connection()
 
         try:
             # Receive data from attacker
@@ -41,6 +41,7 @@ class Honeypot:
                 if command == "QUIT":
                     response = execute_redis_command(query)
                     client_socket.send(response.encode())
+                    logger.log_disconnection()
                     break
 
                 if command == "AUTH":
@@ -57,16 +58,14 @@ class Honeypot:
                     elif len(parts) == 3:
                         username, password = parts[1:]
 
-                    logger.log_activity(
+                    logger.log_auth(
                         username=username,
                         password=password,
                         auth_status=auth_status,
-                        event_id="authorization",
                     )
                 else:
                     response = execute_redis_command(query)
-                    logger.log_activity(
-                        event_id="command_accept",
+                    logger.log_command(
                         command_input=query,
                         command_output=response,
                         command_input_codec=plain_or_base64(query),
@@ -75,7 +74,7 @@ class Honeypot:
                 # Send fake response
                 client_socket.send(response.encode())
         except ConnectionResetError as e:
-            logger.log_activity(event_id="disconnection")
+            logger.log_disconnection()
 
             print(f"Error handling connection: {e}")
         except Exception as e:
