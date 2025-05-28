@@ -1,8 +1,6 @@
 .env
 venv
-redisdata
 __pycache__
 honeypot_logs/*
 .vscode/*
-questions.md
 redis/*
